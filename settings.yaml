@@ -1,0 +1,8 @@
+# number of pages per category from which images will be downloaded
+maxCatPages: 20
+# leave empty for local directory, must end with "/" if not empty
+dataPath: ""
+# downloading images timeout in ms
+downloadTimeout: 100000
+# wait for page to load in ms
+pageLoadTimeout: 10000
