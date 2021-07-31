@@ -2,6 +2,7 @@ const { Builder, By, Key, until } = require('selenium-webdriver');
 const fs = require('fs');
 require('colors');
 const yaml = require('js-yaml');
+const download = require('image-downloader');
 
 function makeDir(folderPath) {
     if (!fs.existsSync(folderPath)) {
@@ -34,6 +35,20 @@ function readYaml(path) {
         console.log(e);
         return null;
     }
+}
+
+async function imgDownloader(link, cat, {dataPath, downloadTimeout}) {
+
+    const templateDir = `${dataPath}data/templates/${cat}`;
+    makeDir(`${templateDir}/`);
+        
+    const options = {
+        url: link,
+        dest: `${templateDir}/${cat}.jpg`,
+        timeout: downloadTimeout
+    };
+
+    await download.image(options).catch((err) => console.error(err));
 }
 
 async function start() {
@@ -90,25 +105,32 @@ async function start() {
         // wait for body to load
         await driver.wait(until.elementLocated(By.css('body')), 10000);
 
-        let webElements = await driver.findElements(By.className('base-img'));
+        let webElements = await driver.findElements(By.className('meme-link'));
 
         if(webElements.length == 0) {
             console.log(`Did not find any elements in `.red + `${memeCat}`.yellow + `, category will be ignored`.red);
             continue;
         }
 
-        const el = webElements[0];
-        let src = await el.getAttribute('data-src');
-        if (src == null) {
-            src = await el.getAttribute('src');
+        let mtemplate;
+        for(const el of webElements) {
+            if(await el.getText() == 'Blank') {
+                mtemplate = el;
+                break;
+            }
         }
-        else {
-            src = `https://${src}`;
-        }
+
+        if(!mtemplate) continue;
+        const img = await mtemplate.findElement(By.css('img'));
+        if(!img) continue; 
+        const src = await img.getAttribute('src');
     
+        // lines 123 and 125 make this obselete, but lets keep it
         if(src.split('.').pop() != 'jpg' && src.split('.').pop() && 'jpeg' && src.split('.').pop() && 'png') {
             continue;
         }
+
+        await imgDownloader(src, memeCat, settings);
 
         memeCategories.push(memeCat);
     }
